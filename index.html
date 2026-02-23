@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>BTC相互計算機</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 50px; background-color: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 400px; }
+        h2 { color: #333; text-align: center; margin-bottom: 1.5rem; font-size: 1.2rem; }
+        .input-group { margin-bottom: 1.2rem; position: relative; }
+        label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.5rem; font-weight: bold; }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1.1rem; outline: none; transition: 0.2s; }
+        input:focus { border-color: #00c2b1; }
+        .info { font-size: 0.75rem; color: #888; margin-top: 10px; line-height: 1.4; }
+        .reset-btn { width: 100%; background: #eee; border: none; padding: 8px; border-radius: 6px; cursor: pointer; margin-top: 10px; color: #666; }
+        .reset-btn:hover { background: #ddd; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>BTC 相互計算機</h2>
+    
+    <div class="input-group">
+        <label>① 1BTCの価格 (円)</label>
+        <input type="number" id="price" placeholder="例: 10000000" oninput="calculate('price')">
+    </div>
+
+    <div class="input-group">
+        <label>② 保有量 (BTC)</label>
+        <input type="number" id="amount" step="0.00000001" placeholder="例: 0.3" oninput="calculate('amount')">
+    </div>
+
+    <div class="input-group">
+        <label>③ 現在の評価額 (円)</label>
+        <input type="number" id="total" placeholder="例: 3000000" oninput="calculate('total')">
+    </div>
+
+    <button class="reset-btn" onclick="resetAll()">クリア</button>
+
+    <div class="info">
+        ※2つの欄を入力すると、残りの1つを自動計算します。<br>
+        ※値を書き換えると、それに基づいて他の値が再計算されます。
+    </div>
+</div>
+
+<script>
+    // どの欄が最後に触られたかを記録して、計算の優先順位を決めます
+    let lastInput = "";
+
+    function calculate(currentId) {
+        const p = document.getElementById('price');
+        const a = document.getElementById('amount');
+        const t = document.getElementById('total');
+
+        const valP = parseFloat(p.value);
+        const valA = parseFloat(a.value);
+        const valT = parseFloat(t.value);
+
+        // 入力パターンに応じて計算
+        if (currentId === 'price' || currentId === 'amount') {
+            // 価格か数量を入れたら、評価額を出す (P * A = T)
+            if (valP && valA) {
+                t.value = Math.floor(valP * valA);
+            }
+        } 
+        
+        if (currentId === 'total') {
+            // 評価額を入れた場合、価格があれば数量を出し、数量があれば価格を出す
+            if (valT && valP) {
+                // T / P = A
+                a.value = (valT / valP).toFixed(8).replace(/\.?0+$/, "");
+            } else if (valT && valA) {
+                // T / A = P
+                p.value = Math.floor(valT / valA);
+            }
+        }
+
+        // 逆引き：価格が空で、数量と評価額がある場合
+        if (currentId === 'amount' && valA && valT && !valP) {
+            p.value = Math.floor(valT / valA);
+        }
+    }
+
+    function resetAll() {
+        document.getElementById('price').value = "";
+        document.getElementById('amount').value = "";
+        document.getElementById('total').value = "";
+    }
+</script>
+
+</body>
+</html>
