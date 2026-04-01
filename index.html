@@ -9,7 +9,7 @@
         h2 { color: #333; text-align: center; margin-bottom: 1.5rem; font-size: 1.2rem; }
         .input-group { margin-bottom: 1.2rem; position: relative; }
         label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.5rem; font-weight: bold; }
-        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1.1rem; outline: none; transition: 0.2s; }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1.1rem; outline: none; transition: 0.2s; text-align: right; }
         input:focus { border-color: #00c2b1; }
         .info { font-size: 0.75rem; color: #888; margin-top: 10px; line-height: 1.4; }
         .reset-btn { width: 100%; background: #eee; border: none; padding: 8px; border-radius: 6px; cursor: pointer; margin-top: 10px; color: #666; }
@@ -23,62 +23,86 @@
     
     <div class="input-group">
         <label>① 1BTCの価格 (円)</label>
-        <input type="number" id="price" placeholder="例: 10000000" oninput="calculate('price')">
+        <input type="text" id="price" placeholder="例: 10,000,000" oninput="handleInput('price')">
     </div>
 
     <div class="input-group">
         <label>② 保有量 (BTC)</label>
-        <input type="number" id="amount" step="0.00000001" placeholder="例: 0.3" oninput="calculate('amount')">
+        <input type="text" id="amount" placeholder="例: 0.3" oninput="handleInput('amount')">
     </div>
 
     <div class="input-group">
         <label>③ 現在の評価額 (円)</label>
-        <input type="number" id="total" placeholder="例: 3000000" oninput="calculate('total')">
+        <input type="text" id="total" placeholder="例: 3,000,000" oninput="handleInput('total')">
     </div>
 
     <button class="reset-btn" onclick="resetAll()">クリア</button>
 
     <div class="info">
-        ※2つの欄を入力すると、残りの1つを自動計算します。<br>
-        ※値を書き換えると、それに基づいて他の値が再計算されます。
+        ※数値を入力すると自動でカンマが入ります。<br>
+        ※2つの欄を入力すると、残りの1つを自動計算します。
     </div>
 </div>
 
 <script>
-    // どの欄が最後に触られたかを記録して、計算の優先順位を決めます
-    let lastInput = "";
+    // カンマを除去して数値に変換
+    function parseNum(val) {
+        const num = parseFloat(val.replace(/,/g, ''));
+        return isNaN(num) ? 0 : num;
+    }
+
+    // 数値をカンマ区切り文字列に変換
+    function formatNum(val, isBTC = false) {
+        if (!val && val !== 0) return "";
+        if (isBTC) {
+            // BTCは小数点8桁まで、かつ末尾の0を消去
+            return val.toFixed(8).replace(/\.?0+$/, "");
+        }
+        // 円単位は整数でカンマ区切り
+        return Math.floor(val).toLocaleString();
+    }
+
+    function handleInput(currentId) {
+        const p = document.getElementById('price');
+        const a = document.getElementById('amount');
+        const t = document.getElementById('total');
+
+        // 現在の入力値をフォーマット（入力中のカーソル位置保持のため工夫が必要ですが、簡易版として実装）
+        const activeEl = document.getElementById(currentId);
+        const rawValue = activeEl.value.replace(/,/g, '');
+        
+        if (currentId !== 'amount') {
+            if(rawValue) activeEl.value = Number(rawValue).toLocaleString();
+        }
+
+        calculate(currentId);
+    }
 
     function calculate(currentId) {
         const p = document.getElementById('price');
         const a = document.getElementById('amount');
         const t = document.getElementById('total');
 
-        const valP = parseFloat(p.value);
-        const valA = parseFloat(a.value);
-        const valT = parseFloat(t.value);
+        const valP = parseNum(p.value);
+        const valA = parseNum(a.value);
+        const valT = parseNum(t.value);
 
-        // 入力パターンに応じて計算
         if (currentId === 'price' || currentId === 'amount') {
-            // 価格か数量を入れたら、評価額を出す (P * A = T)
             if (valP && valA) {
-                t.value = Math.floor(valP * valA);
+                t.value = formatNum(valP * valA);
             }
         } 
         
         if (currentId === 'total') {
-            // 評価額を入れた場合、価格があれば数量を出し、数量があれば価格を出す
             if (valT && valP) {
-                // T / P = A
-                a.value = (valT / valP).toFixed(8).replace(/\.?0+$/, "");
+                a.value = formatNum(valT / valP, true);
             } else if (valT && valA) {
-                // T / A = P
-                p.value = Math.floor(valT / valA);
+                p.value = formatNum(valT / valA);
             }
         }
 
-        // 逆引き：価格が空で、数量と評価額がある場合
         if (currentId === 'amount' && valA && valT && !valP) {
-            p.value = Math.floor(valT / valA);
+            p.value = formatNum(valT / valA);
         }
     }
 
