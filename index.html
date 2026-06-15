@@ -14,6 +14,7 @@
         .info { font-size: 0.75rem; color: #888; margin-top: 10px; line-height: 1.4; }
         .reset-btn { width: 100%; background: #eee; border: none; padding: 8px; border-radius: 6px; cursor: pointer; margin-top: 10px; color: #666; }
         .reset-btn:hover { background: #ddd; }
+        .kanji-hint { font-size: 0.82rem; color: #00a896; margin-top: 4px; min-height: 1.2em; font-weight: bold; letter-spacing: 0.03em; }
     </style>
 </head>
 <body>
@@ -24,6 +25,7 @@
     <div class="input-group">
         <label>① 1BTCの価格 (円)</label>
         <input type="text" id="price" placeholder="例: 10,000,000" oninput="handleInput('price')">
+        <div class="kanji-hint" id="price-kanji"></div>
     </div>
 
     <div class="input-group">
@@ -34,6 +36,7 @@
     <div class="input-group">
         <label>③ 現在の評価額 (円)</label>
         <input type="text" id="total" placeholder="例: 3,000,000" oninput="handleInput('total')">
+        <div class="kanji-hint" id="total-kanji"></div>
     </div>
 
     <button class="reset-btn" onclick="resetAll()">クリア</button>
@@ -45,6 +48,30 @@
 </div>
 
 <script>
+    // 数値を漢字読みに変換（兆・億・万・円）
+    function toKanji(num) {
+        if (!num || num <= 0) return "";
+        const n = Math.floor(num);
+        const cho  = Math.floor(n / 1_0000_0000_0000);
+        const oku  = Math.floor((n % 1_0000_0000_0000) / 1_0000_0000);
+        const man  = Math.floor((n % 1_0000_0000) / 1_0000);
+        const en   = n % 1_0000;
+
+        let result = "";
+        if (cho) result += cho + "兆";
+        if (oku) result += oku + "億";
+        if (man) result += man + "万";
+        if (en)  result += en;
+        return result + "円";
+    }
+
+    function updateKanji(id) {
+        const hintEl = document.getElementById(id + '-kanji');
+        if (!hintEl) return;
+        const val = parseNum(document.getElementById(id).value);
+        hintEl.textContent = val > 0 ? toKanji(val) : "";
+    }
+
     // カンマを除去して数値に変換
     function parseNum(val) {
         const num = parseFloat(val.replace(/,/g, ''));
@@ -76,6 +103,8 @@
         }
 
         calculate(currentId);
+        updateKanji('price');
+        updateKanji('total');
     }
 
     function calculate(currentId) {
@@ -110,6 +139,8 @@
         document.getElementById('price').value = "";
         document.getElementById('amount').value = "";
         document.getElementById('total').value = "";
+        document.getElementById('price-kanji').textContent = "";
+        document.getElementById('total-kanji').textContent = "";
     }
 </script>
 
